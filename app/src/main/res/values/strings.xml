@@ -5,4 +5,6 @@
     <string name="channel_description">Channel Description</string>
     <string name="set_alarm">Set Alarm</string>
     <string name="cancel_alarm">Cancel Alarm</string>
+    <string name="url_to_check">Url to check</string>
+    <string name="minutes">Minutes</string>
 </resources>

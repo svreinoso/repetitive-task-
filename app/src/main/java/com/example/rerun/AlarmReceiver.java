@@ -24,6 +24,7 @@ import java.util.Date;
 public class AlarmReceiver extends BroadcastReceiver {
     private static final String CHANNEL_ID = "1";
     private String tag = "AlarmReceiver";
+    private String url;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -48,12 +49,13 @@ public class AlarmReceiver extends BroadcastReceiver {
     private void sendNotification(Context context, boolean success) {
         createNotificationChannel(context);
         Log.i(tag, "Alarm received");
+        String date = date = Calendar.getInstance().getTime().toString();
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_background)
-                .setContentTitle("My notification")
-                .setContentText("Much longer text that cannot fit one line...")
+                .setContentTitle("Re Run")
+                .setContentText("Last Update : " + date + " ,\nIs online: " + success)
                 .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText("Much longer text that cannot fit one line..."))
+                        .bigText("Last Update : " + date + " ,\nIs online: " + success))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
@@ -61,20 +63,22 @@ public class AlarmReceiver extends BroadcastReceiver {
         int notificationId = 1;
         notificationManager.notify(notificationId, builder.build());
         Log.i(tag, "notification sent");
-        setLastRunDate(context);
+        setLastRunDate(context, success);
     }
 
-    private void setLastRunDate(Context context){
+    private void setLastRunDate(Context context, boolean isOnline){
         SharedPreferences sharedpreferences = context.getSharedPreferences("MyPREFERENCES", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedpreferences.edit();
         Date date = Calendar.getInstance().getTime();
         editor.putString("lastRunDate", date.toString());
+        editor.putBoolean("isOnline", isOnline);
         editor.apply();
     }
 
     private void sendRequest(final Context context) {
         RequestQueue queue = Volley.newRequestQueue(context);
-        String url ="https://www.google.com";
+        SharedPreferences sharedpreferences = context.getSharedPreferences("MyPREFERENCES", Context.MODE_PRIVATE);
+        url = sharedpreferences.getString("url", "");
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
