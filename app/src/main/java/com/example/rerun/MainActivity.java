@@ -13,6 +13,7 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
 import android.view.inputmethod.InputMethodManager;
@@ -22,7 +23,6 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
     private String tag = "MainActivity";
-    //EditText minutesEditText;
     SharedPreferences sharedpreferences;
     AlarmManager alarmMgr;
     Button cancelAlarmBtn, setAlarmBtn;
@@ -37,7 +37,6 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-       // minutesEditText = (EditText) findViewById(R.id.edit_minutes);
         cancelAlarmBtn = (Button) findViewById(R.id.button3);
         setAlarmBtn = (Button) findViewById(R.id.button2);
         textView = (TextView) findViewById(R.id.textView);
@@ -47,8 +46,11 @@ public class MainActivity extends AppCompatActivity {
         alarmMgr = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         sharedpreferences = getSharedPreferences("MyPREFERENCES", Context.MODE_PRIVATE);
 
+        updateUi();
+    }
+
+    private void updateUi(){
         int minutes = sharedpreferences.getInt("minutes", 0);
-        Log.i(tag, String.valueOf(minutes));
         textInputLayoutMinutes.getEditText().setText(String.valueOf(minutes));
 
         String lastUpdateDate = sharedpreferences.getString("lastRunDate", "");
@@ -73,13 +75,28 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_settings) {
+            updateUi();
+            return true;
+        } else if (id == R.id.action_load_page) {
+            startActivity(new Intent(this, LoadPage.class));
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+
     private void SetAlarm (int minutes, String url) {
         Intent intent = new Intent(this, AlarmReceiver.class);
         PendingIntent sender = PendingIntent.getBroadcast(this, 1001, intent,
                 PendingIntent.FLAG_CANCEL_CURRENT);
         alarmMgr.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                SystemClock.elapsedRealtime() + 1000,
-                minutes * 1000, //AlarmManager.INTERVAL_FIFTEEN_MINUTES,
+                SystemClock.elapsedRealtime() + 1000 * 60,
+                minutes  * 60 * 1000, //AlarmManager.INTERVAL_FIFTEEN_MINUTES,
                 sender);
         Log.i(tag, "Alarm set");
         cancelAlarmBtn.setVisibility(View.VISIBLE);

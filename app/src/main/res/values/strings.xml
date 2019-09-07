@@ -7,4 +7,6 @@
     <string name="cancel_alarm">Cancel Alarm</string>
     <string name="url_to_check">Url to check</string>
     <string name="minutes">Minutes</string>
+    <string name="action_update">Update</string>
+    <string name="action_load_page">Load Page</string>
 </resources>

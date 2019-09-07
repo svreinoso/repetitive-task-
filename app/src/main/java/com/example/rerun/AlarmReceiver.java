@@ -2,15 +2,20 @@ package com.example.rerun;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -28,7 +33,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        sendRequest(context);
+        if (isConnectedWifi(context)) sendRequest(context);
     }
 
     private void createNotificationChannel(Context context) {
@@ -46,24 +51,39 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
     }
 
-    private void sendNotification(Context context, boolean success) {
+    private void sendNotification(final Context context, boolean success) {
+        setLastRunDate(context, success);
+        if (success) return;
+
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, 0);
+
+        context.startActivity(new Intent(context, LoadPage.class));
         createNotificationChannel(context);
-        Log.i(tag, "Alarm received");
-        String date = date = Calendar.getInstance().getTime().toString();
+        String date = Calendar.getInstance().getTime().toString();
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .setContentTitle("Re Run")
                 .setContentText("Last Update : " + date + " ,\nIs online: " + success)
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText("Last Update : " + date + " ,\nIs online: " + success))
+                .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
 
         int notificationId = 1;
         notificationManager.notify(notificationId, builder.build());
-        Log.i(tag, "notification sent");
-        setLastRunDate(context, success);
+
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                sendRequest(context);
+            }
+        }, 5000);
+
     }
 
     private void setLastRunDate(Context context, boolean isOnline){
@@ -94,6 +114,18 @@ public class AlarmReceiver extends BroadcastReceiver {
             }
         });
 
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES, DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         queue.add(stringRequest);
+    }
+
+    public static NetworkInfo getNetworkInfo(Context context){
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        return cm.getActiveNetworkInfo();
+    }
+
+    public static boolean isConnectedWifi(Context context){
+        NetworkInfo info = getNetworkInfo(context);
+        return (info != null && info.isConnected() && info.getType() == ConnectivityManager.TYPE_WIFI);
     }
 }
